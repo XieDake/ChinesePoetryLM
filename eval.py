@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
 """
 ===============================================================
-author：xieqiqi
-email：xieqiqi@jd.com
+author：XieDake
+email：DakeXqq@126.com
 date：2018
 introduction:
             Model load and test!
