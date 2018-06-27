@@ -10,7 +10,6 @@ introduction:
 import os,re,json
 import pickle,random
 import torch
-import numpy as np
 from torch.autograd import Variable
 
 def parseRawData(source_fileName,author = None, constrain = None):
@@ -85,12 +84,12 @@ def filter(data):
     poetries_filter=[]
     for p in data:
         if(p.count('。')<=1):
-            #只有一句或者
+            #只有一句的以及不足一句
             continue
         else:
             tmp=list(p)
             tmp.append('<EOS>')
-            poetries_filter.append(p)
+            poetries_filter.append(tmp)
     #
     return poetries_filter
 
@@ -110,18 +109,13 @@ def word2Id_id2Word(data_filter,w2Id_save_fileName,i2Wd_save_fileName):
             else:
                 w2Id[wd]=len(w2Id)
                 i2Wd[w2Id[wd]]=wd
-    #
-    w2Id['<EOS>'] = len(w2Id)
-    i2Wd[w2Id['<EOS>']] = '<EOS>'
-    # w2Id['<SOS>'] = len(w2Id)
-    # i2Wd[w2Id['<SOS>']] = '<SOS>'
     #save
     print("Saving word2ID dict...!")
     with open(w2Id_save_fileName, 'wb') as fw:
         pickle.dump(w2Id, fw)
     print("Saving index2Wd dict...!")
     with open(i2Wd_save_fileName, 'wb') as fw:
-        pickle.dump(w2Id, fw)
+        pickle.dump(i2Wd, fw)
     #
     vocab_size=len(w2Id)
     #
@@ -129,7 +123,7 @@ def word2Id_id2Word(data_filter,w2Id_save_fileName,i2Wd_save_fileName):
     #
     return vocab_size
 
-def train_val_split(data_filter):
+def train_val_split(data_filter,ratio):
     '''
     train and val data set split!
     T:V=8:2
@@ -138,7 +132,7 @@ def train_val_split(data_filter):
     random.shuffle(data_filter)
     #
     data_size=len(data_filter)
-    split_point=round(data_size*0.8)
+    split_point=round(data_size*ratio)
     #
     train_data_filter=data_filter[:split_point]
     val_data_filter = data_filter[split_point:]
@@ -150,7 +144,7 @@ def train_val_split(data_filter):
 def sent2Id(sent,w2id):
     '''
     One sentence to id!
-    注意：sent已经添加<EOS>,没必要添加<SOS>吧!
+    注意：sent已经添加<EOS>!没必要添加<SOS>!
     '''
     sent2id=[]
     for char in sent:
@@ -158,24 +152,29 @@ def sent2Id(sent,w2id):
     #
     return sent2id
 
-def generate_one_sample(sentId):
+def generate_one_sample(sent,w2id):
     '''
     Input sequence!
     OutPut sequence!
     '''
+    sent2id=sent2Id(sent=sent,w2id=w2id)
     #
     seq_input = []
     seq_output = []
     #
-    for i in range(1, len(sentId)):
-        seq_input.append(sentId[i-1])
-        seq_output.append(sentId[i])
+    for i in range(1, len(sent2id)):
+        seq_input.append(sent2id[i-1])
+        seq_output.append(sent2id[i])
     #
-    seq_input=Variable(torch.from_numpy(np.array(seq_input)))
-    seq_output=Variable(torch.from_numpy(np.array(seq_output)))
+    seq_input=Variable(torch.LongTensor(seq_input))
+    seq_output=Variable(torch.LongTensor(seq_output))
     #
     if(torch.cuda.is_available()):
         seq_input=seq_input.cuda()
         seq_output=seq_output.cuda()
-    #
+    # #
+    # print("原句：",sent)
+    # print("seq_input:",seq_input)
+    # print("seq_output:",seq_output)
+    # #
     return seq_input, seq_output
